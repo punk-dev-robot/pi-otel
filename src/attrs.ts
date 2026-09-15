@@ -39,6 +39,21 @@ export const ATTR_CACHE_WRITE_TOKENS = "gen_ai.usage.cache_write_input_tokens";
 export const ATTR_CACHE_CREATION_TOKENS =
   "gen_ai.usage.cache_creation_input_tokens";
 export const ATTR_REASONING_TOKENS = "gen_ai.usage.reasoning_tokens";
+/** pi-specific: thinking blocks Anthropic dropped from the request prefix (cache-miss signal). */
+export const ATTR_THINKING_DROPPED = "pi.anthropic.thinking_dropped";
+
+/** Count `thinking_dropped` transformations in a pi assistant message.diagnostics. */
+export function countThinkingDropped(message: any): number {
+  const diags = Array.isArray(message?.diagnostics) ? message.diagnostics : [];
+  let n = 0;
+  for (const d of diags) {
+    if (d?.type !== "anthropic_input_transformations") continue;
+    const ts = d?.details?.transformations;
+    if (!Array.isArray(ts)) continue;
+    for (const t of ts) if (t?.type === "thinking_dropped") n++;
+  }
+  return n;
+}
 
 // Tool
 export const ATTR_TOOL_NAME = "gen_ai.tool.name";

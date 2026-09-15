@@ -346,3 +346,46 @@ test("provider metadata is present across capture modes (metadata_only, no_tool_
     );
   }
 });
+
+test("thinking_dropped diagnostics are counted onto the LLM span (KUB-153 cache-leak signal)", () => {
+  const { tracer, tracker } = newTracker();
+  tracker.startInteraction("hi");
+  tracker.startLlmRequest("claude-fable-5-1", "anthropic");
+  tracker.noteAssistantMessage({
+    provider: "anthropic",
+    content: "hi",
+    diagnostics: [
+      { type: "other", details: {} },
+      {
+        type: "anthropic_input_transformations",
+        details: {
+          transformations: [
+            {
+              type: "thinking_dropped",
+              path: "messages.75.content.0",
+              reason: "prefix_binding_mismatch",
+            },
+            {
+              type: "thinking_dropped",
+              path: "messages.75.content.1",
+              reason: "prefix_binding_mismatch",
+            },
+            { type: "something_else" },
+          ],
+        },
+      },
+    ],
+  });
+  assert.equal(tracer.spans[1].attributes["pi.anthropic.thinking_dropped"], 2);
+});
+
+test("no thinking_dropped attribute when diagnostics are absent", () => {
+  const { tracer, tracker } = newTracker();
+  tracker.startInteraction("hi");
+  tracker.startLlmRequest("m", "anthropic");
+  tracker.noteAssistantMessage({ provider: "anthropic", content: "hi" });
+  assert.equal(
+    tracer.spans[1].attributes["pi.anthropic.thinking_dropped"],
+    undefined,
+  );
+});

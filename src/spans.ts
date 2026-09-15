@@ -46,6 +46,7 @@ import {
   ATTR_RESPONSE_MODEL,
   ATTR_SESSION_ID,
   ATTR_SYSTEM,
+  ATTR_THINKING_DROPPED,
   ATTR_TOKEN_TYPE,
   ATTR_TOOL_CALL_ARGUMENTS,
   ATTR_TOOL_CALL_ID,
@@ -53,6 +54,7 @@ import {
   ATTR_TOOL_NAME,
   type ContentCapture,
   clampAttr,
+  countThinkingDropped,
   EVENT_GEN_AI_ASSISTANT_MESSAGE,
   EVENT_GEN_AI_CHOICE,
   EVENT_GEN_AI_TOOL_MESSAGE,
@@ -449,6 +451,8 @@ export class SpanTracker {
     if (!this.llm) return;
     if (typeof message?.model === "string")
       this.llm.responseModel = message.model;
+    const dropped = countThinkingDropped(message);
+    if (dropped > 0) this.llm.span.setAttribute(ATTR_THINKING_DROPPED, dropped);
     if (this.genai) {
       // Response confirmation/fallback: a valid response provider corrects or
       // fills the request-start value on the same open span. A missing or

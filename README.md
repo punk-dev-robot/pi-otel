@@ -68,6 +68,8 @@ For the `http/protobuf` and `http/json` protocols, `endpoint` is the **base** UR
 
 `spanNaming: "genai"` (default `"legacy"`) renames spans to the OTel GenAI agent conventions — `invoke_agent pi` / `chat {model}` / `execute_tool {tool}` — and adds `gen_ai.operation.name` plus the spec SpanKind, so backends recognise pi as an agent. It also adds `gen_ai.agent.name` on the interaction span and, on `chat` spans only, `gen_ai.provider.name` (the request's inference provider, e.g. `openai`, `aws.bedrock`). No existing attribute is ever removed in either mode; `legacy` keeps the `pi.*` names existing dashboards query.
 
+When Anthropic drops signed thinking blocks from the request (pi diagnostic `anthropic_input_transformations` / `thinking_dropped`), the `chat` span carries `pi.anthropic.thinking_dropped` = count. Each such turn is usually a prompt-cache miss from that message onward — query it to find cache leaks.
+
 Key env var overrides: `OTEL_EXPORTER_OTLP_ENDPOINT`, `PI_OTEL_SPAN_NAMING=genai`, `PI_OTEL_METRICS=1`, `PI_OTEL_LOGS=1`, `PI_OTEL_DISABLED=1`.
 
 Full reference — settings, env vars, content capture modes, sampling, logs signal, and extensibility: [nikiforovall.blog/pi-otel/configuration](https://nikiforovall.blog/pi-otel/configuration)
