@@ -8,7 +8,15 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { DiagLogLevel } from "@opentelemetry/api";
-import type { ContentCapture, SpanNaming } from "./attrs.js";
+import {
+  ATTR_PI_AGENT_CHILD,
+  ATTR_PI_AGENT_LABEL,
+  ATTR_PI_AGENT_OWNER_SESSION_ID,
+  ATTR_PI_AGENT_ROLE,
+  ATTR_PI_PARENT_SESSION_ID,
+  type ContentCapture,
+  type SpanNaming,
+} from "./attrs.js";
 
 export interface OtelConfig {
   enabled: boolean;
@@ -25,7 +33,7 @@ export interface OtelConfig {
     metrics: boolean;
     logs: boolean;
   };
-  resourceAttributes: Record<string, string>;
+  resourceAttributes: Record<string, string | boolean>;
   logLevel: DiagLogLevel;
   cwd: string;
 }
@@ -78,6 +86,23 @@ function parseKvList(
     }
     out[k] = v;
   }
+  return out;
+}
+
+/** pi-herdsman child-agent identity from its launch env; unset vars are omitted. */
+function herdsmanAttributes(): Record<string, string | boolean> {
+  const env = process.env;
+  const out: Record<string, string | boolean> = {};
+  const map: Array<[string, string | undefined]> = [
+    [ATTR_PI_AGENT_ROLE, env.PI_HERDSMAN_AGENT_DEFINITION],
+    [ATTR_PI_AGENT_LABEL, env.PI_HERDSMAN_LABEL],
+    [ATTR_PI_PARENT_SESSION_ID, env.PI_SUBAGENT_PARENT_SESSION],
+    [ATTR_PI_AGENT_OWNER_SESSION_ID, env.PI_HERDSMAN_OWNER_SESSION_ID],
+  ];
+  for (const [k, v] of map) if (v) out[k] = v;
+  if (env.PI_SUBAGENT_CHILD)
+    out[ATTR_PI_AGENT_CHILD] =
+      env.PI_SUBAGENT_CHILD === "1" || env.PI_SUBAGENT_CHILD === "true";
   return out;
 }
 
@@ -194,7 +219,10 @@ export function resolveConfig(cwd: string): OtelConfig {
         merged?.signals?.metrics === true,
       logs: envTrue(process.env.PI_OTEL_LOGS) || merged?.signals?.logs === true,
     },
-    resourceAttributes: parseKvList(process.env.OTEL_RESOURCE_ATTRIBUTES, true),
+    resourceAttributes: {
+      ...herdsmanAttributes(),
+      ...parseKvList(process.env.OTEL_RESOURCE_ATTRIBUTES, true),
+    },
     logLevel:
       normalizeLogLevel(process.env.OTEL_LOG_LEVEL) ??
       normalizeLogLevel(merged?.logLevel) ??

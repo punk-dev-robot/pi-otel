@@ -61,6 +61,13 @@ export const ATTR_PI_TOOL_IS_ERROR = "pi.tool.is_error";
 export const ATTR_PI_TOOL_INPUT = "pi.tool.input";
 export const ATTR_PI_TOOL_OUTPUT = "pi.tool.output";
 export const ATTR_PI_COST_USD = "pi.cost.usd";
+// Resource attrs for pi-herdsman child agents, read from the env it launches
+// them with. Absent on main (user-started) sessions.
+export const ATTR_PI_AGENT_ROLE = "pi.agent.role";
+export const ATTR_PI_AGENT_LABEL = "pi.agent.label";
+export const ATTR_PI_AGENT_CHILD = "pi.agent.child";
+export const ATTR_PI_AGENT_OWNER_SESSION_ID = "pi.agent.owner.session.id";
+export const ATTR_PI_PARENT_SESSION_ID = "pi.parent.session.id";
 // Set when the LLM span was opened from the assistant message_start instead
 // of before_provider_request, i.e. the provider skipped options.onPayload.
 export const ATTR_PI_LLM_SYNTHESIZED = "pi.llm_request.synthesized";
